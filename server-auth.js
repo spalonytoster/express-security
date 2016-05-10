@@ -3,7 +3,6 @@
 
 var express = require('express'),
     jwt = require('jwt-simple'),
-    _ = require('lodash'),
     bcrypt = require('bcrypt'),
     User = require('./user');
 
@@ -19,11 +18,10 @@ app.post('/session', function (req, res, next) {
   .select('password')
   .exec(function (err, user) {
     if (err) { return next(err); }
-    if (!user) { return res.send(401); }
-    console.dir(user);
+    if (!user) { return res.sendStatus(401); }
     bcrypt.compare(req.body.password, user.password, function (err, valid) {
       if (err) { return next(err); }
-      if (!valid) { return res.send(401); }
+      if (!valid) { return res.sendStatus(401); }
       token = jwt.encode({ username: req.body.username }, secretKey);
       res.json(token);
     });
@@ -37,17 +35,16 @@ app.get('/user', function (req, res) {
   User.findOne({ username: auth.username }, function (err, user) {
     res.json(user);
   });
-  res.json(auth);
 });
 
 app.post('/user', function (req, res, next) {
   var user;
   user = new User({ username: req.body.username });
-  bcrypt.hash(user.username, 10, function (err, hash) {
+  bcrypt.hash(req.body.password, 10, function (err, hash) {
     user.password = hash;
-    user.save(function (err, user) {
+    user.save(function (err) {
       if (err) { throw next(err); }
-      res.send(201);
+      res.status(201).send(user.username + " / " + user.password);
     });
   });
 });
